@@ -143,7 +143,7 @@ for i,j in edges:
     
 
 for o,p in edges:
-    View = check_obstacle(obstacles, o, p, colNumber, rowNumber)
+    View = check_obstacle(obstacles, o, p, colNumber, rowNumber) # The obstacles is considered here.
     if View == 0:
         c[(o,p)] = math.inf
     else:
@@ -185,9 +185,8 @@ The format of pool is like [0, node, 0, [cost]]
 # we also need use varied turn_gamma
 depot = departurePoint
 basic_pool=[]
-# Nodes will replace (1,nodesNumber)
+
 for node in Nodes:
-#for node in range(1, nodesNumber):
     unit_basic_pool=[]
     unit_basic_pool.append(depot)
     unit_basic_pool.append(node)
