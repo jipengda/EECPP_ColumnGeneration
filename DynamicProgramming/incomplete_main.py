@@ -282,6 +282,37 @@ def add_pattern_to_master_model(master_model, colNumber, rowNumber, one_candidat
     master_model.minimize(master_model.visiting_cost)
     return master_model
 
+
+def eecpp_print_solution(eecpp_model, outF):
+    labels = eecpp_model.labels
+    label_table = eecpp_model.label_table
+    x_values = {l: eecpp_model.x[l].solution_value for l in labels}
+    print("/ Check       / Label    / Label's detail(# of node1, node2,...)         /")
+    titleNb = "/ Check       / Label    / Label's detail(# of node1, node2,...)         /"
+    outF.write(titleNb)
+    outF.write("\n")
+    print("/ {} /".format("-" * 70))
+    fformat="/{}/".format("-" * 70)
+    outF.write(fformat)
+    outF.write("\n")
+    for l in labels:
+        if x_values[l] >= 1e-3:
+            label_detail = {a: label_table[a] for a in labels if
+                              a==l}
+            print(
+                "| {:<10g} | {!s:9} | {!s:45} |".format(x_values[l],
+                                                       l,
+                                                       label_detail))
+            print_label_detail = "| {:<10g} | {!s:9} | {!s:45} |".format(x_values[l],
+                                                       l,
+                                                       label_detail)
+            outF.write(print_label_detail)
+            outF.write("\n")
+    print("| {} |".format("-" * 70))
+    fformat = "| {} |".format("-" * 70)
+    outF.write(fformat)
+    outF.write("\n")
+
 def eecpp_solve(q,distance,colNumber, rowNumber, label_table, coord_x, coord_y, **kwargs):
     master_model = make_eecpp_master_model(label_table, colNumber, rowNumber, **kwargs)
     
@@ -349,6 +380,7 @@ def eecpp_solve(q,distance,colNumber, rowNumber, label_table, coord_x, coord_y, 
         outF.write(rc_cost)
         outF.write("\n")
         master_model=add_pattern_to_master_model(master_model, colNumber, rowNumber, one_candidate, outF)
+    eecpp_print_solution(master_model, outF)
     toc=time.time()
     print("Time taken for solving is " + str((toc-tic)) + "sec")
     print()
