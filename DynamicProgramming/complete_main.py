@@ -13,7 +13,7 @@ It is expected to be size 10 x 10, or whose grids is between 80 and 140 grids
 
 from docplex.mp.model import Model
 import matplotlib
-import incomplete_DP 
+import complete_DP 
 import Data
 import time
 import numpy as np
@@ -156,7 +156,7 @@ fixed_turn_gamma=0.0173
 turn_factor=0.0001 
 random.seed(10)   
 for i,j,k in arcs:
-#    turn_gamma = fixed_turn_gamma + random.choice(seq) * turn_factor
+    turn_gamma = fixed_turn_gamma + random.choice(seq) * turn_factor
     theta_radians=math.pi-np.arccos(round((distance[i,j]**2+distance[j,k]**2-distance[i,k]**2)/(2*distance[i,j]*distance[j,k]),2))
     theta_degrees=theta_radians*radians_to_degrees
     turning_cost=turn_gamma*theta_degrees
