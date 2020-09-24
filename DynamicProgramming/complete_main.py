@@ -13,36 +13,191 @@ It is expected to be size 10 x 10, or whose grids is between 80 and 140 grids
 
 from docplex.mp.model import Model
 import matplotlib
-import complete_DP 
+import incomplete_DP 
 import Data
 import time
 import numpy as np
 import math
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import function
+import random
 
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
+
+#--------------------------------Supplementary functions-----------------------
+def check_obstacle(obstacles, lastNode, newNode, colNumber, rowNumber):
+    sideLength = 1
+    flag=1 # initialize flag=1
+    for obstacle in obstacles:
+        x3 = obstacle % colNumber
+        y3 = obstacle // colNumber
+        r_xmin = x3 - sideLength/2
+        r_xmax = x3 + sideLength/2
+        r_ymin = y3 - sideLength/2
+        r_ymax = y3 + sideLength/2
+        if RSIntersection(r_xmin, r_xmax, r_ymin, r_ymax, lastNode, newNode, colNumber, rowNumber) == 1:
+            flag = 0 #flag is variable to replace directly return False of True because we need to test all obstacles
+        else:
+            flag = 1
+        if flag == 0:#once flag change to 0, means one obstacle is hit, thus new node can not be added
+            return False
+    return True# This means all obstacles are not hit, new node can be considered to be added
+"""
+ * if [x1, x2] and [x3, x4] (x4 maybe smaller than x3) has interrection or has not，if yes: return 1， if no: return 0
+"""
+
+
+def IntervalOverlap(x1, x2, x3, x4):
+    t = 0    
+    if x3 > x4:
+       t = x3
+       x3 = x4	   
+       x4 = t
+    if x3 >= x2 or x4 <= x1:
+        return 0
+    else:
+        return 1
+    
+"""
+ * judge rectangular r and line segment AB has intersection or not，if yes: return 1，if no: return 0
+"""
+def RSIntersection(r_xmin,r_xmax,r_ymin, r_ymax, nodeA, nodeB, colNumber, rowNumber):
+    A_x = nodeA % colNumber
+    A_y = nodeA // colNumber
+    B_x = nodeB % colNumber
+    B_y = nodeB // colNumber
+    if (A_y == B_y):# line segement is parallel to x axis//线段平行于x轴
+        if A_y <= r_ymax and A_y >= r_ymin:
+            return IntervalOverlap(r_xmin, r_xmax, A_x,B_x)
+        else:
+            return 0
+
+	# Echange point A and point B to let point B has bigger y coordinate//AB两点交换，让B点的y坐标最大
+
+    # Exchange node A and node B, let B's y value is bigger
+    t = 0
+    if A_y > B_y:
+       t = A_y
+       A_y = B_y
+       B_y = t
+       t= A_x
+       A_x = B_x
+       B_x=t
+	
+    # In line segment//xianduan AB, to find point C and D
+    # Two points secure a line: (x-x1)/(x2-x1)=(y-y1)/(y2-y1)
+    k = (B_x - A_x)/(B_y - A_y)
+    if A_y < r_ymin:
+       D_y = r_ymin
+       D_x = k*(D_y - A_y) + A_x
+    else:
+       D_y=A_y
+       D_x=A_x
+    if B_y > r_ymax:
+       C_y = r_ymax
+       C_x = k*(C_y-A_y) + A_x
+    else:
+       C_y = B_y
+       C_x = B_x
+    if C_y >= D_y: # y axis has overlap
+       return IntervalOverlap(r_xmin, r_xmax,D_x, C_x)
+    else:
+       return 0
+
+
+#--------------------------------Data-----------------------------------------
+agentNumber = 10
 colNumber=3
 rowNumber=3
-
 coord_x = Data.create_coord_x(colNumber, rowNumber)
 coord_y = Data.create_coord_y(colNumber, rowNumber)
+Battery_capacity_constraint = 6.0 # 6.0 is test
+nodesNumber=rowNumber * colNumber
+sideLength=1
+departurePoint=0
+obstacles=[] # no obstacle
+Nodes = [i for i in range(nodesNumber) if i not in obstacles and i!=departurePoint]
+NodesAndDeparturePoint=[i for i in range(nodesNumber)]
 
-label_table = [[0, 1, 0, [3.3468]], 
-               [0, 2, 0, [3.5796]],
-               [0, 3, 0, [3.3468]],
-               [0, 4, 0, [3.4432]],
-	           [0, 5, 0, [3.6346]],
-               [0, 6, 0, [3.5796]],
-               [0, 7, 0, [3.6346]],
-               [0, 8, 0, [3.7725]]]
-'''
-label_table=[[0, 9, 18, 14, 10, 6, 0, [4.869076376472115]],
-	      [0, 13, 17, 16, 12, 8, 4, 0, [4.495260411104263]],
-	      [0, 5, 19, 15, 11, 7, 3, 2, 1, 0, [5.682184093091879]]]
-'''
+
+
+
+#-------------------------------get q and sitance parameter--------------------
+D=Data.create_D(nodesNumber, coord_x, coord_y)
+radians_to_degrees=180/(math.pi)
+Nodes=[i for i in range(nodesNumber) if i not in obstacles and i!= departurePoint]
+NodesAndDeparturePoint = Nodes + [departurePoint]
+edges=[(i,j) for i in NodesAndDeparturePoint for j in NodesAndDeparturePoint]
+arcs=[(i,j,k) for i in NodesAndDeparturePoint for j in NodesAndDeparturePoint for k in NodesAndDeparturePoint]
+distance_lambda = 0.1164
+c={(i,j):0 for i,j in edges}
+q={(i,j,k):0 for i,j,k in arcs}
+distance={(i,j):0 for i,j in edges}
+for i,j in edges:
+    distanceValue=np.hypot(coord_x[i]-coord_x[j],coord_y[i]-coord_y[j]) # it is wrong, it does not consider the obstacle between nodes.
+    distance[(i,j)]=distanceValue
+    distance_cost = distance_lambda * distanceValue
+    c[(i,j)] = distance_cost
+    
+
+for o,p in edges:
+    View = check_obstacle(obstacles, o, p, colNumber, rowNumber) # The obstacles is considered here.
+    if View == 0:
+        c[(o,p)] = math.inf
+    else:
+        pass
+    
+seq=[-10,-9,-8,-7,-6,-5,-4,-3-2,-1,0,1,2,3,4,5,6,7,8,9,10]
+turn_gamma=0.0173
+fixed_turn_gamma=0.0173
+turn_factor=0.0001 
+random.seed(10)   
+for i,j,k in arcs:
+#    turn_gamma = fixed_turn_gamma + random.choice(seq) * turn_factor
+    theta_radians=math.pi-np.arccos(round((distance[i,j]**2+distance[j,k]**2-distance[i,k]**2)/(2*distance[i,j]*distance[j,k]),2))
+    theta_degrees=theta_radians*radians_to_degrees
+    turning_cost=turn_gamma*theta_degrees
+    q[(i,j,k)]=turning_cost
+    a=math.isnan(turning_cost)
+    if a is True:
+        turning_cost=0
+    else:
+        pass
+    q[(i,j,k)]=turning_cost
+
+
+#------------------------------------------------------------------------------
+#add automatic_basic_pool part
+#------------------------------------------------------------------------------
+"""
+This file is going to generate basic pool automatically for the map defined
+
+The format of pool is like [0, node, 0, [cost]]
+"""
+# turning cost is 0, from totalCost_calculation_by_set file we know.
+# we may need delete or add somthing to make function.totalCost_calculation can deal
+# with case where there is obstacle
+# use dijksta for obstalce may not be good enough
+# but it can be a choice
+
+# I mean for basic_pool
+# we also need use varied turn_gamma
+depot = departurePoint
+basic_pool=[]
+
+for node in Nodes:
+    unit_basic_pool=[]
+    unit_basic_pool.append(depot)
+    unit_basic_pool.append(node)
+    unit_basic_pool.append(depot)
+    cost = function.totalCost_calculation(distance_lambda,turn_gamma,unit_basic_pool, colNumber, rowNumber, obstacles)
+    unit_basic_pool.append([cost])
+    basic_pool.append(unit_basic_pool)
+        
+label_table = basic_pool
 
 def make_eecpp_master_model(label_table, colNumber, rowNumber, **kwargs):
     label_number = len(label_table)
