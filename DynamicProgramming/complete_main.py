@@ -199,6 +199,17 @@ for node in Nodes:
         
 label_table = basic_pool
 
+def add_global_cut(master_model, next_integer):
+    labels = master_model.labels
+    master_model.global_cut_ct = master_model.sum(master_model.x[l] for l in labels) >= next_integer
+    master_model.add_constraint(master_model.global_cut_ct)
+    return master_model
+
+def subproblem_modified(gen_model, alpha):
+    gen_model.expr = gen_model.expr - alpha
+    gen_model.minimize(gen_model.expr)
+    return gen_model
+
 def make_eecpp_master_model(label_table, colNumber, rowNumber, **kwargs):
     label_number = len(label_table)
     nodesNumber= colNumber * rowNumber
@@ -521,6 +532,40 @@ def eecpp_solve(NodesAndDeparturePoint,obstacles,q,distance,colNumber, rowNumber
         outF.write(rc_cost)
         outF.write("\n")
         master_model=add_pattern_to_master_model(master_model, colNumber, rowNumber, one_candidate, outF)
+    m = 0  
+    for i in master_model.labels:
+        m = m + (master_model.x[i]).solution_value
+    if m.is_integer() is False:
+        next_integer = math.ceil(m)
+        labels = master_model.labels
+        master_model.global_cut_ct = master_model.sum(master_model.x[l] for l in labels) >= next_integer
+        (master_model.global_cut_ct_name) = 'global_cut_ct_1' # the name may be overlapped , which will cause error.
+        master_model.add_constraint(master_model.global_cut_ct)
+            
+        alpha = (master_model.global_cut_ct).dual_value
+
+        #alpha is dual value of the new constraint of next_integer
+        subproblem_modified(gen_model,alpha)
+        # solve the master problem after adding global_cut_ct
+        ms = master_model.solve(log_output=True)
+        MM="Master Model Solution and its cost: "
+        outF.write(MM)
+        outF.write("\n")
+        for i in master_model.labels:
+            if (master_model.x[i]).solution_value > 0.9:
+                ms_label ="master model solution labels: " +  str(master_model.label_table[i])
+                outF.write(ms_label)
+                outF.write("\n")
+        ms_objective = "master model objective: " + str(master_model.objective_value)
+        outF.write(ms_objective)
+        outF.write("\n")
+        # since my global_cut_ct is set individually, i guess there is no need to deal with dual value.
+        # I think there is no need to solve the subproblem after adding alpha any more
+        gs = gen_model.solve(log_output = True)
+        rc_cost = gen_model.objective_value
+        
+    elif m.is_integer() is True:
+        pass 
     eecpp_print_solution(master_model, outF)
     eecpp_draw_solution(NodesAndDeparturePoint, obstacles, master_model,coord_x,coord_y,colNumber, rowNumber)
     toc=time.time()
