@@ -25,17 +25,19 @@ number_of_criterion1_eliminated=0
 number_of_optimalityPrinciple_eliminated=0
 colNumber = 4
 rowNumber = 5
-lamda = 0.1164
-garma = 0.0173
-# lamda = 0.1164 kj/m
-# garma = 0.0173 kj/deg
+distance_lambda = 0.1164
+turn_gamma = 0.0173
+
+
+# distance_lambda = 0.1164 kj/m
+# turn_gamma = 0.0173 kj/deg
 # totalCost renamed to reduced cost
 # It is not engouth, we also need defeine totalCost individually.
-def obtain_one_candidate(D,duals, coord_x, coord_y, nodesNumber, Battery_capacity_constraint, departurePoint, obstacles):
+def obtain_one_candidate(q,distance,D,duals, coord_x, coord_y, nodesNumber, Battery_capacity_constraint, departurePoint, obstacles):
 # this function obtain_one_candidate intends to get an one_candidate which hope to optimize master model
 # this function don't will return all_quailied_labels, which is not the requirement.
-    global lamda
-    global garma
+    global distance_lambda
+    global turn_gamma
     start_time = time.time()
     # reducedCost & totalCost
     # reducedCost for reducedCost constraint, totalCost for totalCost constraint.
@@ -62,14 +64,15 @@ def obtain_one_candidate(D,duals, coord_x, coord_y, nodesNumber, Battery_capacit
         second_to_lastNode=departurePoint # This is special case for k=1 iteration
         pass0 = Elimination_criteria_based_on_obstacle(obstacles, lastNode, newNode)
         if pass0 is True:
-            pass1 = Battery_capacity_limit_check(second_to_lastNode, lastNode, newNode, coord_x, coord_y, D , totalCost, Battery_capacity_constraint )
+            pass1 = Battery_capacity_limit_check(q, distance, second_to_lastNode, lastNode, newNode, coord_x, coord_y, D , totalCost, Battery_capacity_constraint )
             if pass1 is True:
                 feasible_set.append(newNode)
                 feasible_label = list(feasible_set)
                 go=lastNode
                 to=newNode
                 turnCost=0
-                distanceCost=lamda*D[go][to]
+#                distanceCost=distance_lambda*D[go][to]
+                distanceCost = distance_lambda * distance[go, to]
                 totalCost = turnCost + distanceCost
                 routeCost = duals[departurePoint] * 1
                 reducedCost=turnCost+distanceCost - routeCost
@@ -78,10 +81,11 @@ def obtain_one_candidate(D,duals, coord_x, coord_y, nodesNumber, Battery_capacit
                 sets.append(feasible_set)
                 pass0 = Elimination_criteria_based_on_obstacle(obstacles, newNode, departurePoint)
                 if pass0 is True:
-                    permission = Battery_capacity_limit_check(lastNode, newNode, departurePoint, coord_x, coord_y, D, totalCost, Battery_capacity_constraint)
+                    permission = Battery_capacity_limit_check(q,distance, lastNode, newNode, departurePoint, coord_x, coord_y, D, totalCost, Battery_capacity_constraint)
                     if permission is True:
-                        turnCost = garma * angle(lastNode, newNode, departurePoint, coord_x, coord_y)
-                        distanceCost=lamda * D[newNode][departurePoint]
+#                        turnCost = turn_gamma * angle(lastNode, newNode, departurePoint, coord_x, coord_y)
+                        turnCost=q[lastNode, newNode, departurePoint]
+                        distanceCost=distance_lambda * D[newNode][departurePoint]
                         totalCost = totalCost + turnCost + distanceCost
                         routeCost = duals[newNode] * 1
                         reducedCost=reducedCost+turnCost + distanceCost - routeCost 
@@ -128,7 +132,7 @@ def obtain_one_candidate(D,duals, coord_x, coord_y, nodesNumber, Battery_capacit
                 totalCost = label[0]
                 pass0 = Elimination_criteria_based_on_obstacle(obstacles, lastNode, newNode)
                 if pass0 is True:
-                    pass1 = Battery_capacity_limit_check(second_to_lastNode, lastNode, newNode, coord_x, coord_y, D , totalCost, Battery_capacity_constraint )
+                    pass1 = Battery_capacity_limit_check(q,distance,second_to_lastNode, lastNode, newNode, coord_x, coord_y, D , totalCost, Battery_capacity_constraint )
                     if pass1 is False:
                         pass
                     else:
@@ -141,8 +145,10 @@ def obtain_one_candidate(D,duals, coord_x, coord_y, nodesNumber, Battery_capacit
                             feasible_label = list(feasible_set)
                             go=lastNode
                             to=newNode
-                            turnCost=garma * angle(second_to_lastNode, go, to, coord_x, coord_y)
-                            distanceCost=lamda * D[go][to]
+#                            turnCost=turn_gamma * angle(second_to_lastNode, go, to, coord_x, coord_y)
+                            turnCost=q[second_to_lastNode,go,to]
+#                            distanceCost=distance_lambda * D[go][to]
+                            distanceCost= distance_lambda * distance[go, to]
                             # reducedCost
                             # define a function calculating sum of route cost in label
                             totalCost = totalCost + turnCost + distanceCost
@@ -158,10 +164,12 @@ def obtain_one_candidate(D,duals, coord_x, coord_y, nodesNumber, Battery_capacit
             totalCost = feasible_set[-1][0]
             pass0 = Elimination_criteria_based_on_obstacle(obstacles, lastNode, newNode)
             if pass0 is True:
-                permission = Battery_capacity_limit_check(second_to_lastNode, lastNode, newNode, coord_x, coord_y, D, totalCost, Battery_capacity_constraint)
+                permission = Battery_capacity_limit_check(q,distance, second_to_lastNode, lastNode, newNode, coord_x, coord_y, D, totalCost, Battery_capacity_constraint)
                 if permission is True:
-                    turnCost = garma * angle(second_to_lastNode, lastNode, newNode, coord_x, coord_y)
-                    distanceCost = lamda * D[lastNode][newNode]
+#                    turnCost = turn_gamma * angle(second_to_lastNode, lastNode, newNode, coord_x, coord_y)
+                    turnCost = q[second_to_lastNode, lastNode, newNode]
+#                    distanceCost = distance_lambda * D[lastNode][newNode]
+                    distanceCost = distance_lambda * distance[lastNode, newNode]
                     # reducedCost
                     totalCost = feasible_set[-1][0] + turnCost + distanceCost
                     label = [totalCost]
@@ -293,13 +301,14 @@ def RSIntersection(r_xmin,r_xmax,r_ymin, r_ymax, nodeA, nodeB):
 # At the first level, we have the set S and its load y(S)
 # At the second level,for the given set S, we have the terminal nodes i belongs to S used to form the states (S,i)
 # At the third level, for a state (S,i), the reduced set of lables H(S,i) is stored.
-def Battery_capacity_limit_check(second_to_lastNode, lastNode, newNode, coord_x, coord_y, D , totalCost, Battery_capacity_constraint ):
-    global lamda
-    global garma
+def Battery_capacity_limit_check(q,distance, second_to_lastNode, lastNode, newNode, coord_x, coord_y, D , totalCost, Battery_capacity_constraint ):
+    global distance_lambda
+    global turn_gamma
     futureCost=0
     go=lastNode
     to=newNode
-    turnCost=garma * angle(second_to_lastNode, go, to, coord_x, coord_y)
+#    turnCost=turn_gamma * angle(second_to_lastNode, go, to, coord_x, coord_y)
+    turnCost=q[second_to_lastNode,go,to]
     #judge turnCost nan or not nan
     flag = math.isnan(turnCost)
     #end
@@ -307,7 +316,8 @@ def Battery_capacity_limit_check(second_to_lastNode, lastNode, newNode, coord_x,
         turnCost=0
     else:
         turnCost=turnCost
-    distanceCost=lamda * D[go][to]
+#    distanceCost=distance_lambda * D[go][to]
+    distanceCost=distance_lambda * distance[go,to]
     totalCost=totalCost+turnCost + distanceCost
     futureCost = totalCost
     if futureCost > Battery_capacity_constraint:
