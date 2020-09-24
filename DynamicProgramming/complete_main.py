@@ -542,10 +542,10 @@ def eecpp_solve(NodesAndDeparturePoint,obstacles,q,distance,colNumber, rowNumber
         (master_model.global_cut_ct_name) = 'global_cut_ct_1' # the name may be overlapped , which will cause error.
         master_model.add_constraint(master_model.global_cut_ct)
             
-        alpha = (master_model.global_cut_ct).dual_value
+#        alpha = (master_model.global_cut_ct).dual_value
 
         #alpha is dual value of the new constraint of next_integer
-        subproblem_modified(gen_model,alpha)
+#        subproblem_modified(gen_model,alpha)
         # solve the master problem after adding global_cut_ct
         ms = master_model.solve(log_output=True)
         MM="Master Model Solution and its cost: "
@@ -561,8 +561,8 @@ def eecpp_solve(NodesAndDeparturePoint,obstacles,q,distance,colNumber, rowNumber
         outF.write("\n")
         # since my global_cut_ct is set individually, i guess there is no need to deal with dual value.
         # I think there is no need to solve the subproblem after adding alpha any more
-        gs = gen_model.solve(log_output = True)
-        rc_cost = gen_model.objective_value
+#        gs = gen_model.solve(log_output = True)
+#        rc_cost = gen_model.objective_value
         
     elif m.is_integer() is True:
         pass 
