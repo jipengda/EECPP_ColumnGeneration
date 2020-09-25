@@ -23,8 +23,8 @@ import math
 number_of_criteria_based_on_adjacent_nodes=0
 number_of_criterion1_eliminated=0
 number_of_optimalityPrinciple_eliminated=0
-colNumber = 4
-rowNumber = 5
+colNumber = 2
+rowNumber = 3
 distance_lambda = 0.1164
 turn_gamma = 0.0173
 
@@ -33,7 +33,7 @@ turn_gamma = 0.0173
 # turn_gamma = 0.0173 kj/deg
 # totalCost renamed to reduced cost
 # It is not engouth, we also need defeine totalCost individually.
-def obtain_one_candidate(q,distance,D,duals, coord_x, coord_y, nodesNumber, Battery_capacity_constraint, departurePoint, obstacles):
+def obtain_one_candidate(q,c,distance,D,duals, coord_x, coord_y, nodesNumber, Battery_capacity_constraint, departurePoint, obstacles):
 # this function obtain_one_candidate intends to get an one_candidate which hope to optimize master model
 # this function don't will return all_quailied_labels, which is not the requirement.
     global distance_lambda
@@ -72,7 +72,8 @@ def obtain_one_candidate(q,distance,D,duals, coord_x, coord_y, nodesNumber, Batt
                 to=newNode
                 turnCost=0
 #                distanceCost=distance_lambda*D[go][to]
-                distanceCost = distance_lambda * distance[go, to]
+#                distanceCost = distance_lambda * distance[go, to]
+                distanceCost = c[go,to]
                 totalCost = turnCost + distanceCost
                 routeCost = duals[departurePoint] * 1
                 reducedCost=turnCost+distanceCost - routeCost
@@ -85,7 +86,8 @@ def obtain_one_candidate(q,distance,D,duals, coord_x, coord_y, nodesNumber, Batt
                     if permission is True:
 #                        turnCost = turn_gamma * angle(lastNode, newNode, departurePoint, coord_x, coord_y)
                         turnCost=q[lastNode, newNode, departurePoint]
-                        distanceCost=distance_lambda * D[newNode][departurePoint]
+#                        distanceCost=distance_lambda * D[newNode][departurePoint]
+                        distanceCost = c[go,to]
                         totalCost = totalCost + turnCost + distanceCost
                         routeCost = duals[newNode] * 1
                         reducedCost=reducedCost+turnCost + distanceCost - routeCost 
@@ -148,7 +150,8 @@ def obtain_one_candidate(q,distance,D,duals, coord_x, coord_y, nodesNumber, Batt
 #                            turnCost=turn_gamma * angle(second_to_lastNode, go, to, coord_x, coord_y)
                             turnCost=q[second_to_lastNode,go,to]
 #                            distanceCost=distance_lambda * D[go][to]
-                            distanceCost= distance_lambda * distance[go, to]
+#                            distanceCost= distance_lambda * distance[go, to]
+                            distanceCost=c[go, to]
                             # reducedCost
                             # define a function calculating sum of route cost in label
                             totalCost = totalCost + turnCost + distanceCost
@@ -169,7 +172,8 @@ def obtain_one_candidate(q,distance,D,duals, coord_x, coord_y, nodesNumber, Batt
 #                    turnCost = turn_gamma * angle(second_to_lastNode, lastNode, newNode, coord_x, coord_y)
                     turnCost = q[second_to_lastNode, lastNode, newNode]
 #                    distanceCost = distance_lambda * D[lastNode][newNode]
-                    distanceCost = distance_lambda * distance[lastNode, newNode]
+#                    distanceCost = distance_lambda * distance[lastNode, newNode]
+                    distanceCost = c[lastNode, newNode]
                     # reducedCost
                     totalCost = feasible_set[-1][0] + turnCost + distanceCost
                     label = [totalCost]
