@@ -110,7 +110,7 @@ def RSIntersection(r_xmin,r_xmax,r_ymin, r_ymax, nodeA, nodeB, colNumber, rowNum
 
 #--------------------------------Data-----------------------------------------
 agentNumber = 10
-colNumber=3
+colNumber=2
 rowNumber=3
 coord_x = Data.create_coord_x(colNumber, rowNumber)
 coord_y = Data.create_coord_y(colNumber, rowNumber)
@@ -132,11 +132,16 @@ Nodes=[i for i in range(nodesNumber) if i not in obstacles and i!= departurePoin
 NodesAndDeparturePoint = Nodes + [departurePoint]
 edges=[(i,j) for i in NodesAndDeparturePoint for j in NodesAndDeparturePoint]
 arcs=[(i,j,k) for i in NodesAndDeparturePoint for j in NodesAndDeparturePoint for k in NodesAndDeparturePoint]
-distance_lambda = 0.1164
 c={(i,j):0 for i,j in edges}
 q={(i,j,k):0 for i,j,k in arcs}
 distance={(i,j):0 for i,j in edges}
+sey = [-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10]
+distance_lambda = 0.1164
+fixed_distance_lambda = 0.1164
+distance_factor=0.0001
+random.seed(20)
 for i,j in edges:
+    distance_lambda = fixed_distance_lambda + random.choice(sey) * distance_factor
     distanceValue=np.hypot(coord_x[i]-coord_x[j],coord_y[i]-coord_y[j]) # it is wrong, it does not consider the obstacle between nodes.
     distance[(i,j)]=distanceValue
     distance_cost = distance_lambda * distanceValue
@@ -156,7 +161,7 @@ fixed_turn_gamma=0.0173
 turn_factor=0.0001 
 random.seed(10)   
 for i,j,k in arcs:
-    turn_gamma = fixed_turn_gamma + random.choice(seq) * turn_factor
+#    turn_gamma = fixed_turn_gamma + random.choice(seq) * turn_factor
     theta_radians=math.pi-np.arccos(round((distance[i,j]**2+distance[j,k]**2-distance[i,k]**2)/(2*distance[i,j]*distance[j,k]),2))
     theta_degrees=theta_radians*radians_to_degrees
     turning_cost=turn_gamma*theta_degrees
@@ -496,7 +501,7 @@ def eecpp_solve(NodesAndDeparturePoint,obstacles,q,distance,colNumber, rowNumber
         curr = master_model.objective_value
         duals = master_model.dual_values(master_model.node_visit_cts)
         # there is still more to be done~~
-        one_candidate=complete_DP.obtain_one_candidate(q,distance,D, duals, coord_x, coord_y, nodesNumber, Battery_capacity_constraint, departurePoint, obstacles) #add obstacle(m,n)
+        one_candidate=complete_DP.obtain_one_candidate(q,c,distance,D, duals, coord_x, coord_y, nodesNumber, Battery_capacity_constraint, departurePoint, obstacles) #add obstacle(m,n)
         compare = []
         if one_candidate == compare:
             print("Fails, one_candidate doesn't exist")
