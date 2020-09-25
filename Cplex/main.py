@@ -9,6 +9,7 @@ Created on Sat Jun 27 21:17:14 2020
 This file is copied from global_cut_column.py in work_0816
 """
 from docplex.mp.model import Model
+import matplotlib
 import Data
 import numpy as np
 import math
@@ -16,6 +17,12 @@ import matplotlib.pyplot as plt
 import time
 import function
 import random
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 
 #------------------------------------------------------------------------------
 # def functions
@@ -87,7 +94,7 @@ def add_pattern_to_master_model(master_model, obstacles, colNumber, rowNumber, x
 # SUPPLEMENTARY FUNCTIONS
 #----------------------------------------------------------------------------------
 def eecpp_solve_default(**kwargs):
-    return eecpp_solve(c,q,obstacles, colNumber, rowNumber, label_table,coord_x, coord_y, **kwargs)
+    return eecpp_solve(NodesAndDeparturePoint, obstacles,c,q,colNumber, rowNumber, label_table, coord_x, coord_y, **kwargs)
 
 def eecpp_print_solution(eecpp_model, outF):
     labels = eecpp_model.labels
@@ -118,7 +125,146 @@ def eecpp_print_solution(eecpp_model, outF):
     fformat = "| {} |".format("-" * 70)
     outF.write(fformat)
     outF.write("\n")
+    
+    
+def eecpp_draw_solution(NodesAndDeparturePoint, obstacles, eecpp_model,coord_x,coord_y,colNumber,rowNumber):
+#----------------------------Basic size information of figure------------------    
+    sideLength=1
+    width = 2*colNumber - 2
+    height = 2*rowNumber - 2
+    plt.figure(figsize=(width, height))
+    plt.xlabel("Coordinate X")
+    plt.ylabel("Coordinate Y")
+    plt.title("Solution of EECPP_ColumnGeneration using cplex for Multi-agent EECPP Problem")
 
+#----------------------------draw objects indluding nodes and obstacles--------
+# draw nodes
+    for n in NodesAndDeparturePoint:
+        if n!=departurePoint:
+            plt.scatter(x=coord_x[n],y=coord_y[n],color='blue')
+            currentAxis=plt.gca()
+            rect=patches.Rectangle( (coord_x[n]-1/2*sideLength,coord_y[n]-1/2*sideLength),sideLength,sideLength,linewidth=1,edgecolor='k',facecolor='none' )
+            currentAxis.add_patch(rect)
+        else:
+            plt.scatter(x=coord_x[n],y=coord_y[n],color='green')
+            currentAxis=plt.gca()
+            rect=patches.Rectangle( (coord_x[n]-1/2*sideLength,coord_y[n]-1/2*sideLength),sideLength,sideLength,linewidth=1,edgecolor='k',facecolor='none' )
+            currentAxis.add_patch(rect)
+
+# draw obstacles
+    for obstacle in obstacles:
+        # use x0,y0 to be short for coord_x[obstacle],coord_y[obstacle]
+        x0=coord_x[obstacle]
+        y0=coord_y[obstacle]
+        plt.scatter(x=x0,y=y0,color='red')
+        #second, pathes.Rectangle
+        currentAxis=plt.gca()
+        rect=patches.Rectangle( (x0-1/2*sideLength,y0-1/2*sideLength),sideLength,sideLength,linewidth=1,edgecolor='k',facecolor='grey' )
+        currentAxis.add_patch(rect)
+#end    
+    
+#----------------------------draw out all individual paths---------------------    
+    sets=[]
+    agent1_set=[]
+    agent2_set=[]
+    agent3_set=[]
+    agent4_set=[]
+    agent5_set=[]
+    agent6_set=[]
+    agent7_set=[]
+    agent8_set=[]
+    agent9_set=[]
+    agent10_set=[]
+    labels = eecpp_model.labels
+    label_table = eecpp_model.label_table
+    for l in labels:
+        if eecpp_model.x[l].solution_value > 0.9:
+            sets.append(label_table[l])
+    agent1_set=sets[0][:-1]
+    if len(sets) >=2:
+        agent2_set=sets[1][:-1]
+    if len(sets)>=3:
+        agent3_set=sets[2][:-1]
+    if len(sets)>=4:
+        agent4_set=sets[3][:-1]
+    if len(sets)>=5:
+        agent5_set=sets[4][:-1]
+    if len(sets)>=6:
+        agent6_set=sets[5][:-1]
+    if len(sets)>=7:
+        agent7_set=sets[6][:-1]
+    if len(sets)>=8:
+        agent8_set=sets[7][:-1]
+    if len(sets)>=9:
+        agent9_set=sets[8][:-1]
+    if len(sets)>=10:
+        agent10_set=sets[9][:-1]
+    length = len(agent1_set)
+    for i in range(length-1):
+        start = agent1_set[i]
+        end   = agent1_set[i+1]
+        plt.plot([coord_x[start], coord_x[end]],[coord_y[start], coord_y[end]], color='blue')
+
+    length = len(agent2_set)
+    for i in range(length-1):
+        start = agent2_set[i]
+        end   = agent2_set[i+1]
+        plt.plot([coord_x[start], coord_x[end]],[coord_y[start], coord_y[end]], color='orange')
+
+
+    length = len(agent3_set)
+    for i in range(length-1):
+        start = agent3_set[i]
+        end   = agent3_set[i+1]
+        plt.plot([coord_x[start], coord_x[end]],[coord_y[start], coord_y[end]], color='green')
+    
+    length = len(agent4_set)
+    for i in range(length-1):
+        start = agent4_set[i]
+        end   = agent4_set[i+1]
+        plt.plot([coord_x[start], coord_x[end]],[coord_y[start], coord_y[end]], color='red')
+
+
+    length = len(agent5_set)
+    for i in range(length-1):
+        start = agent5_set[i]
+        end   = agent5_set[i+1]
+        plt.plot([coord_x[start], coord_x[end]],[coord_y[start], coord_y[end]], color='purple')
+
+    length = len(agent6_set)
+    for i in range(length-1):
+        start = agent6_set[i]
+        end   = agent6_set[i+1]
+        plt.plot([coord_x[start], coord_x[end]],[coord_y[start], coord_y[end]], color='brown')
+
+
+    length = len(agent7_set)
+    for i in range(length-1):
+        start = agent7_set[i]
+        end   = agent7_set[i+1]
+        plt.plot([coord_x[start], coord_x[end]],[coord_y[start], coord_y[end]], color='pink')
+    
+    length = len(agent8_set)
+    for i in range(length-1):
+        start = agent8_set[i]
+        end   = agent8_set[i+1]
+        plt.plot([coord_x[start], coord_x[end]],[coord_y[start], coord_y[end]], color='gray')
+
+    
+    length = len(agent9_set)
+    for i in range(length-1):
+        start = agent9_set[i]
+        end   = agent9_set[i+1]
+        plt.plot([coord_x[start], coord_x[end]],[coord_y[start], coord_y[end]], color='olive')
+
+    length = len(agent10_set)
+    for i in range(length-1):
+        start = agent10_set[i]
+        end   = agent10_set[i+1]
+        plt.plot([coord_x[start], coord_x[end]],[coord_y[start], coord_y[end]], color='cyan')
+    plt.savefig("figure.pdf")
+    plt.show() 
+    
 def check_obstacle(obstacles, lastNode, newNode, colNumber, rowNumber):
     sideLength = 1
     flag=1 # initialize flag=1
@@ -365,7 +511,7 @@ def make_eecpp_generation_model(obstacles, c,q,colNumber, rowNumber, coord_x, co
 #--------------------------------------------------------------------------------------
 # COLUMN GENERATION ITERATIONS
 #--------------------------------------------------------------------------------------
-def eecpp_solve(c,q,obstacles,colNumber, rowNumber, label_table, coord_x, coord_y, **kwargs):
+def eecpp_solve(NodesAndDeparturePoint, obstacles,c,q,colNumber, rowNumber, label_table, coord_x, coord_y, **kwargs):
     master_model = make_eecpp_master_model(obstacles, label_table, colNumber, rowNumber, **kwargs)
     
     gen_model = make_eecpp_generation_model(obstacles, c,q,colNumber, rowNumber, coord_x, coord_y, **kwargs)
@@ -439,7 +585,7 @@ def eecpp_solve(c,q,obstacles,colNumber, rowNumber, label_table, coord_x, coord_
 
 # print out the solution of master_model before judge the sum is integer or not
 #
-    eecpp_print_solution(master_model, outF)    
+    
     m = 0  
     for i in master_model.labels:
         m = m + (master_model.x[i]).solution_value
@@ -483,12 +629,13 @@ def eecpp_solve(c,q,obstacles,colNumber, rowNumber, label_table, coord_x, coord_
     outF.write("\n")
     
     eecpp_print_solution(master_model, outF)
+    eecpp_draw_solution(NodesAndDeparturePoint, obstacles, master_model,coord_x,coord_y,colNumber, rowNumber)
     outF.close()
     
 #------------------------------------------------------------------------------
 # main
 #------------------------------------------------------------------------------
-colNumber=3
+colNumber=2
 rowNumber=3
 
 
