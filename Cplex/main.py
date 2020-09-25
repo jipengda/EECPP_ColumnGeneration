@@ -289,8 +289,7 @@ def make_eecpp_generation_model(obstacles, c,q,colNumber, rowNumber, coord_x, co
     
     C = 6
     distance_lambda = 0.1164
-    turn_gamma = 0
-    turn_gamma = 0.0176
+    turn_gamma = 0.0173
     
     radians_to_degrees = 180/(math.pi)
     distanceValue=0
@@ -489,8 +488,8 @@ def eecpp_solve(c,q,obstacles,colNumber, rowNumber, label_table, coord_x, coord_
 #------------------------------------------------------------------------------
 # main
 #------------------------------------------------------------------------------
-colNumber=4
-rowNumber=4
+colNumber=3
+rowNumber=3
 
 
 
@@ -538,7 +537,7 @@ fixed_turn_gamma=0.0173
 turn_factor=0.0001 
 random.seed(10)   
 for i,j,k in arcs:
-    turn_gamma = fixed_turn_gamma + random.choice(seq) * turn_factor
+#    turn_gamma = fixed_turn_gamma + random.choice(seq) * turn_factor
     theta_radians=math.pi-np.arccos(round((distance[i,j]**2+distance[j,k]**2-distance[i,k]**2)/(2*distance[i,j]*distance[j,k]),2))
     theta_degrees=theta_radians*radians_to_degrees
     turning_cost=turn_gamma*theta_degrees
